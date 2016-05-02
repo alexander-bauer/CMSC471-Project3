@@ -68,11 +68,15 @@ def get_classifications(pairs):
         descriptors.append(get_descriptor(im))
         classifications.append(classification)
 
-    return descriptors, classifications
+    desc_arr = np.array(descriptors)
+
+    for colnum in range(desc_arr.shape[1]):
+        desc_arr[:,colnum] /= max(desc_arr[:,colnum])
+
+    return desc_arr, classifications
 
 def get_descriptor(im):
     descriptor = contourize(im)
-    #print(descriptor)
     return descriptor
 
 def deskew(img, size=100, flags=cv2.WARP_INVERSE_MAP|cv2.INTER_LINEAR):
@@ -101,8 +105,14 @@ def contourize(im, blur_size=5):
     image, contours, hierarchy = cv2.findContours(th,
             cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+    num_contours = len(contours)
+    area = sum((cv2.contourArea(contour) for contour in contours))
+    biggest_contour = max(contours, key = lambda c: cv2.contourArea(c))
+    solidity = float(area)/sum((cv2.contourArea(cv2.convexHull(c))
+        for c in contours))
+
     # Put a bunch of properties in a vector.
-    return [len(contours)]
+    return [num_contours, solidity]
 
 def cornerize(im, num_corners=10):
     corners_matrix = cv2.cornerHarris(im, 2, 3, 0.04)
