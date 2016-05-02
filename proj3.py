@@ -71,7 +71,9 @@ def get_classifications(pairs):
     return descriptors, classifications
 
 def get_descriptor(im):
-    return contourize(im)
+    descriptor = contourize(im)
+    #print(descriptor)
+    return descriptor
 
 def deskew(img, size=100, flags=cv2.WARP_INVERSE_MAP|cv2.INTER_LINEAR):
     # Find the moments of the grayscale image.
@@ -91,8 +93,8 @@ def deskew(img, size=100, flags=cv2.WARP_INVERSE_MAP|cv2.INTER_LINEAR):
 
     return img
 
-def contourize(img, blur_size=5):
-    blurred = cv2.GaussianBlur(img, (blur_size, blur_size), 0)
+def contourize(im, blur_size=5):
+    blurred = cv2.GaussianBlur(im, (blur_size, blur_size), 0)
     th = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, \
             cv2.THRESH_BINARY, 11, 2)
 
@@ -100,7 +102,27 @@ def contourize(img, blur_size=5):
             cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # Put a bunch of properties in a vector.
-    return [len(contours), sum(sum(th/255))]
+    return [len(contours)]
+
+def cornerize(im, num_corners=10):
+    corners_matrix = cv2.cornerHarris(im, 2, 3, 0.04)
+
+    corners_coords = []
+
+    for x in range(corners_matrix.shape[0]):
+        for y in range(corners_matrix.shape[1]):
+            point = corners_matrix[x,y]
+            if point != 0:
+                corners_coords.append((x, y, point))
+
+    corners_coords.sort(key = lambda c: c[2], reverse=True)
+    top = sorted(corners_coords[:num_corners], key = lambda c: c[0])
+
+    flattened_top = []
+    for c in top:
+        flattened_top.extend([c[0], c[1]])
+
+    return flattened_top
 
 def hog(img, num_bins=16):
     """Calculate the histogram of oriented gradients of the entire image.
