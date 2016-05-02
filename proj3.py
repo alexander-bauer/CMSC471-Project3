@@ -100,7 +100,7 @@ def deskew(img, size=100, flags=cv2.WARP_INVERSE_MAP|cv2.INTER_LINEAR):
 def contourize(im, blur_size=5):
     blurred = cv2.GaussianBlur(im, (blur_size, blur_size), 0)
     th = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, \
-            cv2.THRESH_BINARY, 11, 2)
+            cv2.THRESH_BINARY, 11, 5)
 
     image, contours, hierarchy = cv2.findContours(th,
             cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -114,6 +114,19 @@ def contourize(im, blur_size=5):
     # Put a bunch of properties in a vector.
     return [num_contours, solidity]
 
+# Doesn't seem to provide much value.
+def count_pixels(im, blur_size=5):
+    blurred = cv2.GaussianBlur(im, (blur_size, blur_size), 0)
+    # Make blackish pixels really black, and whiteish pixels 1, so we can count
+    # them.
+    th = cv2.adaptiveThreshold(blurred, 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, \
+            cv2.THRESH_BINARY, 11, 5)
+
+    print(th.size, sum(sum(th)))
+
+    return [th.size - sum(sum(th))]
+
+# Doesn't seem to provide much value.
 def cornerize(im, num_corners=10):
     corners_matrix = cv2.cornerHarris(im, 2, 3, 0.04)
 
@@ -134,6 +147,7 @@ def cornerize(im, num_corners=10):
 
     return flattened_top
 
+# Has trouble working with the rest of my code.
 def hog(img, num_bins=16):
     """Calculate the histogram of oriented gradients of the entire image.
     
