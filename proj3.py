@@ -79,6 +79,7 @@ def get_descriptor(im):
     descriptor = contourize(im)
     return descriptor
 
+# This caused some weird behaviors for me, also.
 def deskew(img, size=100, flags=cv2.WARP_INVERSE_MAP|cv2.INTER_LINEAR):
     # Find the moments of the grayscale image.
     m = cv2.moments(img)
