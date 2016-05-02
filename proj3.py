@@ -6,6 +6,9 @@ import argparse
 import itertools
 import pickle
 
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 try:
     import cv2
 except ImportError as e:
@@ -31,13 +34,26 @@ def main(args):
                 for path in image_paths(args.image))
         descriptors, classifications = get_classifications(pairs)
 
+        test_model = svm.SVC()
         scores = sklearn.cross_validation.cross_val_score(
-                sklearn.svm.SVC(), descriptors, classifications, cv=10)
+                test_model, descriptors, classifications, cv=10)
         print("Accuracy on 10-fold cross validation: {:0.2f} (+/- {:0.2f})" \
                 .format(scores.mean(), scores.std() * 2))
 
         model = sklearn.svm.SVC()
         model.fit(descriptors, classifications)
+
+        with open(args.model, 'w') as f:
+            pickle.dump(model, f)
+
+    else:
+        with open(args.model, 'r') as f:
+            model = pickle.load(f)
+
+        for path in image_paths(args.image):
+            im = cv2.imread(path, 0)
+            classification = model.predict(get_descriptor(im))
+            print("{} -> {}".format(path, classification))
 
 def get_classifications(pairs):
     """Trains a SVM using each of the image/classification pairs."""
@@ -47,16 +63,44 @@ def get_classifications(pairs):
 
     for path, classification in pairs:
         # Load the image.
-        im = cv2.imread(path)
+        im = cv2.imread(path, 0)
         # Calculate the HOG descriptor.
-        descriptors.append(hog(im))
+        descriptors.append(get_descriptor(im))
         classifications.append(classification)
 
     return descriptors, classifications
 
 def get_descriptor(im):
-    edges = cv2.Canny(cv2.cvtColor(im, cv2.COLOR_BGR2GRAY), 100, 200)
-    return [sum(sum(edges))]
+    return contourize(im)
+
+def deskew(img, size=100, flags=cv2.WARP_INVERSE_MAP|cv2.INTER_LINEAR):
+    # Find the moments of the grayscale image.
+    m = cv2.moments(img)
+
+    # If it's already deskewed, do nothing.
+    if abs(m['mu02']) < 1e-2:
+        return img.copy()
+
+    # Otherwise, compute the skew and apply it.
+    skew = m['mu11']/m['mu02']
+    M = np.float32([[1, skew, -0.5*size*skew], [0, 1, 0]])
+    img = cv2.warpAffine(img,M,(size, size),flags=flags)
+
+    cv2.imshow('', img)
+    cv2.waitKey(0)
+
+    return img
+
+def contourize(img, blur_size=5):
+    blurred = cv2.GaussianBlur(img, (blur_size, blur_size), 0)
+    th = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, \
+            cv2.THRESH_BINARY, 11, 2)
+
+    image, contours, hierarchy = cv2.findContours(th,
+            cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Put a bunch of properties in a vector.
+    return [len(contours), sum(sum(th/255))]
 
 def hog(img, num_bins=16):
     """Calculate the histogram of oriented gradients of the entire image.
