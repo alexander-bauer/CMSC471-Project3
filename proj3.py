@@ -76,8 +76,7 @@ def get_classifications(pairs):
     return desc_arr, classifications
 
 def get_descriptor(im):
-    descriptor = contourize(im)
-    return descriptor
+    return np.hstack(im)/255
 
 # This caused some weird behaviors for me, also.
 def deskew(img, size=100, flags=cv2.WARP_INVERSE_MAP|cv2.INTER_LINEAR):
