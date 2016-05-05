@@ -53,7 +53,10 @@ def main(args):
         for path in image_paths(args.image):
             im = cv2.imread(path, 0)
             classification = model.predict(get_descriptor(im))
-            print("{} -> {}".format(path, classification))
+            if args.verbose:
+                print("{} -> {}".format(path, classification))
+            else:
+                print(classification[0])
 
 def get_classifications(pairs):
     """Trains a SVM using each of the image/classification pairs."""
@@ -96,6 +99,8 @@ if __name__ == "__main__":
             help="train the model and save it")
     parser.add_argument("--model", default="model.pkl",
             help="the file the model is saved to or loaded from")
+    parser.add_argument("--verbose", action="store_true",
+            help="print a full path -> classification for each file")
     parser.add_argument("image", nargs="+",
             help="images or directory to classify")
 
