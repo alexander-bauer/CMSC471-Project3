@@ -1,0 +1,77 @@
+\documentclass[12pt]{article}
+
+\usepackage{../cmsc471}
+\fancyhead[R]{CMSC 471, Project 3}
+
+\linespread{1.5}
+
+\pagestyle{fancy}
+
+\begin{document}
+
+My final approach to classifying the images was to load the images in grayscale,
+stack the image matrix horizontally to make it into a horizontal vector, divide
+the vector by 255 to scale everything between 0 and 1, then train a SVM on the
+result. Using 10-fold cross-validation, this method achieves $91\%$ accuracy,
+and is reasonably fast.
+
+I am interested in the possible application of an approach similar to the
+``Eigenfaces'' presented in 1991 by Turk and Pentland. That is: use the training
+set to construct a matrix representing known symbols, find the most significant
+eigenvectors, use them to construct a lower-dimensional ``symbol space,'' and
+reproject data onto this space to use as a feature vector. This could not only
+simplify the SVM used to classify samples, but also drastically increase the
+speed.
+
+Simpler techniques would be interested in experimenting with would be
+straightforward graphical operations to reduce the image complexity, such as
+thresholding or smoothing.
+
+Another method may be to reproject each image onto a common image plane by
+finding the maximum and minimum coordinates of black pixels, and projecting them
+(using the simple homography computed from the four pairs of points) onto the
+corners of a square. This would reduce the surrounding whitespace, and normalize
+samples for size and position within the picture.
+
+I was unable to explore these for lack of time and motivation, however. On the
+Sunday before the due date, I worked with Katie Dillon to experiment with
+methods for featurizing the data set, and to suffer thought the OpenCV
+installation process together.
+
+To begin with, I imported OpenCV (although easy for me on Linux, quite dreadful
+on other operating systems), and loaded the images in the training set
+using \verb+imread+. This remains my method, but could be easily replaced by
+less cumbersome library at this point.
+
+As a first pass, I used a naive count of the number of black pixels in the
+image, after binary thresholding, as a one-length feature vector. In doing this
+and many following attempts, I failed to normalize the data in the feature
+vectors, and hence got very poor results. This method achieved results no better
+than random.
+
+In the many hours following, we tried many other methods including: variations
+on pixel counting with blurring and adaptive thresholding; histograms of
+oriented gradients, with and without deskewing; and interpretations of the
+samples as contours. We attempted to featurize the images as patches using SIFT
+and SURF, but could not acquire non-proprietary and working implementations of
+them.
+
+Use of the contours to explore featurization was an interesting exercise,
+because it allowed us to work with geometric properties of the images, such as
+the area of the contours, the total number, the solidity (area divided by the
+area of the enclosing convex hull), and others. Using a number of features of
+the contour domain, I was able to achieve $54\%$ accuracy. Shortly after finding
+this, Katie realized that inputs to SVMs should be normalized. With that
+implemented, my model achieved approximately $74\%$ accuracy with 10-fold
+cross-validation.
+
+I was initially satisfied with this result, but the significant improvement in
+accuracy of having normalized the features encouraged us to continue working on
+it. Eventually, we happened upon the correct method of putting the images
+directly into the SVM by stacking the rows horizontally into a vector. This gave
+results with approximately $90\%$ accuracy, and I decided to submit that result.
+
+The entire development history of my source code is fairly completely documented
+within the Git history of this repository.
+
+\end{document}

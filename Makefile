@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-all:
+all: proj3.pdf
 
 clean:
 	rm -rf results/
